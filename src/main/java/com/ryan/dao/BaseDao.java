@@ -1,10 +1,10 @@
-package com.ryan.statement;
+package com.ryan.dao;
 
-import com.ryan.bean.Customer;
 import com.ryan.utils.JDBCUtils;
-import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,23 +12,47 @@ import java.util.List;
 /**
  * @description:
  * @author: Bubble
- * @create: 2022-04-18 2:10 下午
+ * @create: 2022-04-19 2:57 下午
  */
-public class CustomersQuery {
+public abstract class BaseDao<T> {
 
+    public Class<T> clazz = null;
 
-    @Test
-    public void test3(){
-        String sql = "select id,name,email,birth from customers where id<?";
-        List<Customer> list = queryMulti(Customer.class, sql, 5);
-        list.forEach(System.out::println);
+    {
+        ParameterizedType parameterizedType = (ParameterizedType)this.getClass().getGenericSuperclass();
+        Type[] arguments = parameterizedType.getActualTypeArguments();
+        Class<T> aClass = (Class<T>) arguments[0];
+        clazz = aClass;
+    }
+
+    /**
+     * 查询特殊值
+     */
+    public <E> E querySp(Connection conn, String sql, Object... args) {
+        PreparedStatement prepareStatement = null;
+        ResultSet resultSet = null;
+        try {
+            prepareStatement = conn.prepareStatement(sql);
+            for (int i = 0; i < args.length; i++) {
+                prepareStatement.setObject(i + 1, args[i]);
+            }
+
+            resultSet = prepareStatement.executeQuery();
+            if (resultSet.next()) {
+                return (E) resultSet.getObject(1);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } finally {
+            JDBCUtils.closeResource(null, prepareStatement, resultSet);
+        }
+        return null;
     }
 
     /**
      * 通用查询多条记录
      */
-    public static  <T> List<T> queryMulti(Class<T> clazz, String sql, Object... args) {
-        Connection conn = null;
+    public  List<T> queryMulti(Connection conn, String sql, Object... args) {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         try {
@@ -65,23 +89,15 @@ public class CustomersQuery {
         } catch (Exception e) {
         } finally {
             //7.关闭资源
-            JDBCUtils.closeResource(conn, statement, resultSet);
+            JDBCUtils.closeResource(null, statement, resultSet);
         }
         return null;
-    }
-
-    @Test
-    public void test2(){
-        String sql = "select id,name,email,birth from customers where id =?";
-        Customer customer = query(Customer.class, sql, 3);
-        System.out.println(customer);
     }
 
     /**
      * 通用表的查询一条记录
      */
-    public static  <T> T query(Class<T> clazz, String sql, Object... args) {
-        Connection conn = null;
+    public T query(Connection conn, String sql, Object... args) {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         try {
@@ -117,42 +133,35 @@ public class CustomersQuery {
         } catch (Exception e) {
         } finally {
             //7.关闭资源
-            JDBCUtils.closeResource(conn, statement, resultSet);
+            JDBCUtils.closeResource(null, statement, resultSet);
         }
         return null;
     }
 
-    @Test
-    public void testQuery() {
-        Connection conn = null;
+    /**
+     * 通用的增删改
+     */
+    public int update(Connection conn, String sql, Object... args) {
+
         PreparedStatement statement = null;
-        ResultSet resultSet = null;
+
         try {
-            conn = JDBCUtils.getConnection();
-            String sql = "select id,name,email,birth from customers where nme=?";
+            //1.预编译语句
             statement = conn.prepareStatement(sql);
-            statement.setObject(1, "陈道明");
-            //执行并返回结果集
-            resultSet = statement.executeQuery();
-            //处理结果集
-            if (resultSet.next()) {
-                int id = resultSet.getInt(1);
-                String name = resultSet.getString(2);
-                String email = resultSet.getString(3);
-                Date birth = resultSet.getDate(4);
-                // System.out.println("id= " + id "name" + name, "email" + email, "birth" + birth);
-                Customer customer = new Customer();
-                customer.setId(id);
-                customer.setName(name);
-                customer.setEmail(email);
-                customer.setBirth(birth);
-                System.out.println(customer);
+            //2.填充占位符
+            for (int i = 0; i < args.length; i++) {
+                statement.setObject(i + 1, args[i]);
             }
-        } catch (Exception throwables) {
-            throwables.printStackTrace();
+            //3.执行
+            // statement.execute();
+            return statement.executeUpdate();
+        } catch (Exception e) {
+
         } finally {
-            JDBCUtils.closeResource(conn, statement, resultSet);
+            //4.关闭资源
+            JDBCUtils.closeResource(null, statement, null);
         }
 
+        return 0;
     }
 }

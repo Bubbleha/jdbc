@@ -1,5 +1,11 @@
 package com.ryan.utils;
 
+import com.alibaba.druid.pool.DruidDataSourceFactory;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.apache.commons.dbcp2.BasicDataSourceFactory;
+
+import javax.sql.DataSource;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
@@ -12,15 +18,61 @@ import java.util.Properties;
  */
 public class JDBCUtils {
 
-    public static Connection getConnection() {
+   private static DataSource dataSourceDruid = null;
+
+    static {
+        try {
+            Properties properties = new Properties();
+            InputStream is = new FileInputStream("src/main/resources/druid.properties");
+            properties.load(is);
+            dataSource = DruidDataSourceFactory.createDataSource(properties);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+    public static Connection getConnectionDruid(){
+        try {
+           return dataSourceDruid.getConnection();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return null;
+    }
+
+    private static DataSource dataSource =null;
+    static {
+        try {
+            Properties properties = new Properties();
+            InputStream is = ClassLoader.getSystemResourceAsStream("dbcp.properties");
+            properties.load(is);
+            dataSource = BasicDataSourceFactory.createDataSource(properties);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public static Connection getConnectionDBCP(){
+        try {
+           return dataSource.getConnection();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return null;
+    }
+
+    private static ComboPooledDataSource cpds = new ComboPooledDataSource("c3p0");
+
+    public static Connection getConnectionC3P0() throws SQLException {
+        Connection connection = cpds.getConnection();
+        return connection;
+    }
+
+    public static Connection getConnection() throws SQLException, ClassNotFoundException, IOException {
         //1.加载配置文件
         InputStream is = ClassLoader.getSystemResourceAsStream("jdbc.properties");
         Properties properties = new Properties();
-        try {
-            properties.load(is);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        properties.load(is);
 
         //2.获取配置信息
         String driverClass = properties.getProperty("driverClass");
@@ -29,17 +81,12 @@ public class JDBCUtils {
         String password = properties.getProperty("password");
         Connection conn = null;
 
-        try {
-            //3.加载驱动
-            Class.forName(driverClass);
 
-            //4.获取连接
-            conn = DriverManager.getConnection(url, user, password);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
+        //3.加载驱动
+        Class.forName(driverClass);
+
+        //4.获取连接
+        conn = DriverManager.getConnection(url, user, password);
 
         return conn;
     }
@@ -52,7 +99,7 @@ public class JDBCUtils {
             if (statement != null) {
                 statement.close();
             }
-            if (resultSet != null){
+            if (resultSet != null) {
                 resultSet.close();
             }
         } catch (SQLException throwables) {

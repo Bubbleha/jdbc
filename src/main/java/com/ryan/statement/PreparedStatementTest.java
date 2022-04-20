@@ -42,7 +42,7 @@ public class PreparedStatementTest {
             // statement.execute();
             return statement.executeUpdate();
 
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             throwables.printStackTrace();
         } finally {
             //5.关闭资源
@@ -96,7 +96,7 @@ public class PreparedStatementTest {
             statement.setObject(2, 1);
             //4.执行
             statement.execute();
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             throwables.printStackTrace();
         } finally {
             //5.关闭资源

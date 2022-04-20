@@ -44,7 +44,7 @@ public class Batch {
             conn.commit();
             long end = System.currentTimeMillis();
             System.out.println("花费的时间为:" + (end -start));
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             throwables.printStackTrace();
         } finally {
             JDBCUtils.closeResource(conn, statement, null);
@@ -79,7 +79,7 @@ public class Batch {
             }
             long end = System.currentTimeMillis();
             System.out.println("花费的时间为:" + (end -start));
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             throwables.printStackTrace();
         } finally {
             JDBCUtils.closeResource(conn, statement, null);
@@ -103,7 +103,7 @@ public class Batch {
             }
             long end = System.currentTimeMillis();
             System.out.println("花费的时间为:" + (end -start));
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             throwables.printStackTrace();
         } finally {
             JDBCUtils.closeResource(conn, statement, null);
